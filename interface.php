@@ -2,4 +2,4 @@
 
 namespace lhtml;
 
-class Parser {}
+class Interface {}
