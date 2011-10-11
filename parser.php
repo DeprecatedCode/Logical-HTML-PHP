@@ -59,7 +59,7 @@ class Parser {
 		/**
 		 * Create new Interdace and assign it to workable variables
 		 */
-		$this->results = new Interface;
+		$this->results = new InterfaceObj;
 		$element = $this->results;
 		
 		/**
