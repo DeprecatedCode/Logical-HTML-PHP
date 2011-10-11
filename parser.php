@@ -4,6 +4,9 @@ namespace lhtml;
 
 class Parser {
 	
+	public static $callback = false;
+	public static $callback_data = false;
+	
 	public $file_name;
 	public $file_cont;
 	
@@ -21,6 +24,16 @@ class Parser {
 	
 	public function __construct() {
 		
+	}
+	
+	public function register_callback($callback, $data = false) {
+		self::$callback = $callback;
+		self::$callback_data = $data;
+	}
+	
+	public function unregister_callback() {
+		self::$callback = false;
+		self::$callback_data = false;
 	}
 	
 	public function build($file) {
