@@ -48,7 +48,7 @@ class Parser {
 		 */
 		$cache = __DIR__.'/cache/'.md5($file.$_SERVER['HTTP_HOST']);
 		if(@filemtime($file) > @filemtime($cache)) return file_get_contents($cache);
-		else $this->file_cont = file__get_contents($file);
+		else $this->file_cont = file_get_contents($file);
 		
 		/**
 		 * Parse the LHTML file

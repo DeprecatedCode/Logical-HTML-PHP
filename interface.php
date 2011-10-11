@@ -257,7 +257,28 @@ class InterfaceObj {
 	}
 	
 	/**
-	 * Pickup from IXML Interface.php line  450
+	 * Pickup from IXML Interface.php line  450 - Monday 10th
 	 */
+	
+	public function _el($el) {
+		$this->ec++;
+		return ($this->children[$this->ec] new InterfaceObj($el, $this));
+	}
+	
+	public function _hardwire($object, $extreme = 0) {
+		$object->_ = $this;
+		$this->ec++;
+		if($extreme) foreach($object->children as $child) {
+			if($child instanceof InterfaceObj) $this->_hardwire($child);
+		}
+		else $this->children[$this->ec] = $object;
+		
+		return $this;
+	}
+	
+	public function _data() {
+		if($this->_data) return $this->_data;
+		else return $this->_->_data();
+	}
 	
 }
