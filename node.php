@@ -16,7 +16,7 @@ class Node {
 	}
 	
 	public function _nchild($name) {
-		$nchild = new NodeObj($name, $this);
+		$nchild = new Node($name, $this);
 		$this->children[] =& $nchild;
 		return $nchild;
 	}
@@ -49,7 +49,7 @@ class Node {
 		/**
 		 * Save the reformatted attributes to the object array
 		 */
-		$this->attributes = $attrs; return true
+		$this->attributes = $attrs; return true;
 	}
 	
 	public function output() {

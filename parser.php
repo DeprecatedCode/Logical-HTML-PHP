@@ -2,6 +2,9 @@
 
 namespace lhtml;
 
+define(__NAMESPACE__.'\LHTML_VAR_REGEX', "/{([\w:|.\,\(\)\/\-\% \[\]\?'=]+?)}/");
+define(__NAMESPACE__.'\LHTML_VAR_REGEX_SPECIAL', "/{(\%[\w:|.\,\(\)\[\]\/\-\% ]+?)}/");
+
 class Parser {
 	
 	public $file_name;
@@ -25,20 +28,20 @@ class Parser {
 		/**
 		 * If the LHTML file does not exist throw an exception
 		 */
-		if(!file_exists($file)) throw new Exception('LHTML Could not load $file');
+		if(!file_exists($file)) throw new \Exception('LHTML Could not load $file');
 		
 		/**
 		 * Check to see if a valid cache exists and use it
 		 * Else pull in the LHTML file
-		 */
+		 */		
 		$cache = __DIR__.'/cache/'.md5($file.$_SERVER['HTTP_HOST']);
-		if(@filemtime($file) > @filemtime($cache)) return file_get_contents($cache);
-		else $this->file_cont = file_get_contents($file);
+		if(@filemtime($file) < @filemtime($cache)) $this->file_cont = @file_get_contents($cache);
+		else $this->file_cont = @file_get_contents($file);
 		
 		/**
 		 * Parse the LHTML file
 		 */
-		$time = microtime(true);
+		$time = microtime(true);		
 		$output = $this->parse();
 		$this->parse_time = microtime(true) - $time;
 		
@@ -65,11 +68,11 @@ class Parser {
 		$open_tags = array();
 		$open_tag_id = 0;
 		$force_html = false;
-		
+				
 		/**
 		 * Loop through each tag
 		 */
-		while($tag = $this->get_tag($force_html)) {
+		while($tag = $this->parse_tag($force_html)) {
 			/**
 			 * Extract the variables from the array
 			 */
@@ -90,7 +93,7 @@ class Parser {
 			 * Show parse error if an expected closing tag does not occur
 			 */
 			if($type == 'close' && $name !== $open_tags[$open_tag_id])
-				throw new ParseException('LHTML Parse Error', $this->file_name, $this->line_numb, 'I was expecting the end tag <code>&lt;/'.$open_tags[$open_tag_id].'&gt;</code>, instead I got <code>&lt;/'.$tag_name.'&gt;</code>');
+				throw new \Exception('LHTML Parse Error', $this->file_name, $this->line_numb, 'I was expecting the end tag <code>&lt;/'.$open_tags[$open_tag_id].'&gt;</code>, instead I got <code>&lt;/'.$tag_name.'&gt;</code>');
 			
 			/**
 			 * Handle each tag type based on its type
@@ -107,7 +110,7 @@ class Parser {
 					 * If no stack has been initialized, create one else create a new node
 					 */
 					if(!$stack && (!($stack instanceof Node))) $stack = new Node($name);
-					else $stack = $stack->_nchild($name);
+					else $stack = $stack->_nchild($name);					
 					
 					/**
 					 * Process the tags attributes
@@ -149,12 +152,14 @@ class Parser {
 			/**
 			 * End Switch
 			 */
-			
+				
 		}
 		/**
 		 * End While Loop
 		 */
 		
+		//var_dump($stack);
+				
 		return $stack->output();
 	}
 	
