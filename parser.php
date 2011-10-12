@@ -4,9 +4,6 @@ namespace lhtml;
 
 class Parser {
 	
-	public static $callback = false;
-	public static $callback_data = false;
-	
 	public $file_name;
 	public $file_cont;
 	
@@ -14,26 +11,14 @@ class Parser {
 	public $line_cont;
 	
 	public $cache;
-	public $object;
-	public $results;
-	
+	public $nodestack;
+
 	public $parse_time = 0;
 	
 	public $html_tags = array('script','style');
 	private $pointer = 0;
 	
 	public function __construct() {
-		
-	}
-	
-	public function register_callback($callback, $data = false) {
-		self::$callback = $callback;
-		self::$callback_data = $data;
-	}
-	
-	public function unregister_callback() {
-		self::$callback = false;
-		self::$callback_data = false;
 	}
 	
 	public function build($file) {
@@ -65,15 +50,13 @@ class Parser {
 		/**
 		 * Return the parsed data
 		 */
-		return $output;
+		echo $output;
 	}
 	
 	public function parse() {
 		/**
 		 * Create new Interdace and assign it to workable variables
 		 */
-		$this->results = new InterfaceObj;
-		$element = $this->results;
 		
 		/**
 		 * Create holders to determine open tags
@@ -101,7 +84,7 @@ class Parser {
 			/**
 			 * Process comment in the interface
 			 */
-			if($type == 'comment') $element->_html($name);
+			if($type == 'comment') $stack->_cdata($name);
 			
 			/**
 			 * Show parse error if an expected closing tag does not occur
@@ -115,27 +98,34 @@ class Parser {
 			switch($type) {
 				case 'open':
 					/**
-					 * Nate's Fix
-					 */
-					if($element === false) $element = $this->results;
-					
-					/**
 					 * Increment open tag ID
 					 */
 					$open_tag_id++;
 					$open_tags[$open_tag_id] = $name;
 					
 					/**
-					 * Process the tag and its attributes in the interface
+					 * If no stack has been initialized, create one else create a new node
 					 */
-					$element = $element->$name;
-					$element->_attr($attributes);
+					if(!$stack && (!($stack instanceof Node))) $stack = new Node($name);
+					else $stack = $stack->_nchild($name);
+					
+					/**
+					 * Process the tags attributes
+					 */
+					$stack->_attrs($attributes);
 				break;
 				case 'complete':
 					/**
-					 * Process the tag and its attributes in the interface
+					 * If no stack has been initialized, create one else create a new node
 					 */
-					$element->$name->_attr($attributes);
+					if(!$stack && (!($stack instanceof Node))) $stack = new Node($name);
+					else $stack = $stack->_nchild($name);
+					
+					/**
+					 * Process the tags attributes then step down the stack
+					 */
+					$stack->_attrs($attributes);
+					if($stack->_ instanceof Node) $stack = $stack->_;
 				break;
 				case 'close':
 					/**
@@ -145,15 +135,15 @@ class Parser {
 					$open_tag_id--;
 					
 					/**
-					 * Decrement the interface level
+					 * Step down the stack
 					 */
-					$element->$element->_;
+					if($stack->_ instanceof Node) $stack = $stack->_;
 				break;
 				case 'cdata':
 					/**
-					 * Send the cdata to the interface
+					 * Send the cdata to the stack
 					 */
-					$element->_html($name, $attributes);
+					$stack->_cdata($attributes);
 				break;
 			}		
 			/**
@@ -165,6 +155,7 @@ class Parser {
 		 * End While Loop
 		 */
 		
+		return $stack->output();
 	}
 	
 	public function parse_tag($force_html) {
