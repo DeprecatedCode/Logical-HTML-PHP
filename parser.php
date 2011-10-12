@@ -35,9 +35,10 @@ class Parser {
 		 * Else pull in the LHTML file
 		 */		
 		$cache = __DIR__.'/cache/'.md5($file.$_SERVER['HTTP_HOST']);
-		if(@filemtime($file) < @filemtime($cache)) $this->file_cont = @file_get_contents($cache);
-		else $this->file_cont = @file_get_contents($file);
-		
+		//if(@filemtime($file) < @filemtime($cache)) $this->file_cont = @file_get_contents($cache);
+		//else $this->file_cont = @file_get_contents($file);
+		$this->file_cont = @file_get_contents($file);
+				
 		/**
 		 * Parse the LHTML file
 		 */
@@ -146,7 +147,7 @@ class Parser {
 					/**
 					 * Send the cdata to the stack
 					 */
-					$stack->_cdata($attributes);
+					$stack->_cdata($name);
 				break;
 			}		
 			/**
@@ -186,7 +187,7 @@ class Parser {
 		if(strlen($node) != 0) {
 			$cdata = $this->extract_vars($node, $force_html ? true : false);
 			$this->pointer = $search;
-			
+						
 			return array('type' => 'cdata', 'name' => $node, 'attributes'=> $cdata);
 		}
 		
