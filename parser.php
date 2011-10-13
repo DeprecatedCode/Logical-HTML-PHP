@@ -183,10 +183,8 @@ class Parser {
 		 */
 		$node = trim(substr($this->file_cont, $this->pointer, $search - $this->pointer));
 		if(strlen($node) != 0) {
-			$cdata = $this->extract_vars($node, $force_html ? true : false);
-			$this->pointer = $search;
-						
-			return array('type' => 'cdata', 'name' => $node, 'attributes'=> $cdata);
+			$this->pointer = $search;						
+			return array('type' => 'cdata', 'name' => $node, 'attributes'=> false);
 		}
 		
 		/**
@@ -243,31 +241,6 @@ class Parser {
 		 * Return the tag
 		 */
 		return $return;
-	}
-		
-	private function extract_vars($string, $special = false) {		
-		/**
-		 * Match the variables
-		 */
-		preg_match_all(
-			$special ? LHTML_VAR_REGEX_SPECIAL : LHTML_VAR_REGEX, // Regex Search
-			$string, // Source String
-			$matches, // Array of matches
-			PREG_SET_ORDER // Settings
-		);
-		
-		/**
-		 * Loop thru the matches and assign them to an array
-		 */
-		$vars = array();
-		foreach((array)$matches as $var) {
-			$vars[] = $var[1];
-		}
-		
-		/**
-		 * Return the list of variables
-		 */
-		return $vars;		
 	}	
 	
 	private function get_attributes($tag){

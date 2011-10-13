@@ -23,7 +23,8 @@ class Scope {
 		else return $this->data;
 	}
 	
-	public function __construct() {
+	public function __construct($parent = false) {
+		if($parent instanceof Node) $this->parent = $parent;
 		$this->timers['scope->map'] = 0;
 		$this->timers['scope->get'] = 0;
 	}
@@ -95,7 +96,7 @@ class Scope {
 		return $source;
 	}
 	
-	private function parse($var) {
+	public function parse($var) {
 		$tt = microtime(true);
 		
 		$extract_vars = $this->extract_vars($var);
@@ -116,7 +117,23 @@ class Scope {
 			
 			if(strpos($result, ' : ') !== false) list($result, $else) = explode(' : ', $result);
 			
-			if(strpos($cond, ' == ') !== false) {
+			if(strpos($cond, ' + ') !== false) {
+				list($cond1, $cond2) = explode(' + ', $cond);
+				$var = $cond1 + $cond2;
+			}
+			else if(strpos($cond, ' - ') !== false) {
+				list($cond1, $cond2) = explode(' - ', $cond);
+				$var = $cond1 - $cond2;
+			}
+			else if(strpos($cond, ' / ') !== false) {
+				list($cond1, $cond2) = explode(' / ', $cond);
+				$var = $cond1 / $cond2;
+			}
+			else if(strpos($cond, ' * ') !== false) {
+				list($cond1, $cond2) = explode(' * ', $cond);
+				$var = $cond1 * $cond2;
+			}
+			else if(strpos($cond, ' == ') !== false) {
 				list($cond, $compare) = explode(' == ', $cond);
 				$val = $this->get($cond);
 				$cval = $this->get($compare);
@@ -183,11 +200,6 @@ class Scope {
 		$this->timers['scope->map'] += microtime(true) - $tt;
 		
 		return array('vars' => $vars, 'filters' => $filters);
-	}
-	
-	public function map($var, $source = false) {
-		if(strpos($var, '%') === 0) $var = substr($var, 1);
-		return $this->parse($var); return false;
 	}
 	
 	public function __get($v) {
