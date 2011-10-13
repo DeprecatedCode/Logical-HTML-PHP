@@ -1,6 +1,234 @@
 <?php
 
 namespace lhtml;
+use \Exception;
+
+class Parser2 {
+	
+	public $lineNumber;
+	public $colNumber;
+	
+	public $cdataTags = array('script', 'style');
+	
+	// The entire syntax is defined here as what token the next char implies
+	private $parserSyntax = array(
+		
+		# _
+		'default' 			=> array(	'<' => 'tag-start' 			),
+		
+		# <_
+		'tag-start' 		=> array(	' ' => 'error',
+										'<' => 'error',
+										'>' => 'error',
+										'"' => 'error',
+										"'" => 'error',
+										'/' => 'tag-close',
+										'*' => '!tag-open-name' 		),
+		# </_					
+		'tag-close'			=> array(	' ' => 'error',
+										'/' => 'error',
+										'<' => 'error',
+										'>' => 'error',
+										'"' => 'error',
+										"'" => 'error',
+										'*' => '!tag-close-name'		),
+		# <a_								
+		'tag-open-name' 	=> array(	' ' => 'tag-open-body',
+										'<' => 'error',
+										'>' => 'tag-end-inside',
+										'"' => 'error',
+										"'" => 'error',
+										'/' => 'tag-end-close'		),
+		# </a_							
+		'tag-close-name' 	=> array(	' ' => 'error',
+										'<' => 'error',
+										'>' => 'tag-end-outside',
+										'"' => 'error',
+										"'" => 'error',
+										'/' => 'error'				),
+		# <a ... _						
+		'tag-open-body'		=> array(	' ' => '#drop',
+										'<' => 'error',
+										'>' => 'tag-end-inside',
+										'"' => 'error',
+										"'" => 'error',
+										'/' => 'tag-end-close',
+										'*' => '!tag-attr-name'		),
+		# <a ... b_						
+		'tag-attr-name'		=> array(	' ' => 'error',
+										'<' => 'error',
+										'>' => 'error',
+										'"' => 'error',
+										"'" => 'error',
+										'/' => 'error',
+										'=' => 'tag-attr-equal'		),
+		# <a ... b=_						
+		'tag-attr-name'		=> array(	'"' => 'tag-attr-quote',
+										'*' => 'error'				),
+		# <a ... b="_						
+		'tag-attr-quote'	=> array(	'"' => 'tag-attr-qend',
+										'*' => '!tag-attr-value'	),
+		# <a ... b="c_						
+		'tag-attr-value'	=> array(	'escape' => '\\',
+										'"' => 'tag-attr-qend'		),
+		# <a ... b="c"_						
+		'tag-attr-qend'		=> array(	'*' => '!tag-open-body'		),
+		
+		# <a ... /_								
+		'tag-end-close' 	=> array(	' ' => 'error',
+										'<' => 'error',
+										'>' => 'tag-end-outside',
+										'"' => 'error',
+										"'" => 'error',
+										'/' => 'error'				),
+		# <a ... />_ or </a>_							
+		'tag-end-outside'	=> array(	'*' => '!default'			),
+										
+		# <a>_						
+		'tag-end-inside' => array(	'type' => 'conditional',
+		
+			# <script...>_
+			array(	'token' 	=> 'tag-open-name',
+					'equals'	=> 'script',
+					
+					'special'	=> array(
+						'</script>'	=> '!default',
+						'//'		=> 'cdata-line-comment',
+						'/*'		=> 'cdata-block-comment',
+					),
+					
+					'"' => 'cdata-string-double',
+					"'" => 'cdata-string-single'		),
+			
+			# <style...>_
+			array(	'token' 	=> 'tag-open-name',
+					'equals'	=> 'style',
+					
+					'special'	=> array(
+						'</style>'	=> '!default',
+						'/*'		=> 'cdata-block-comment',
+					),
+					
+					'"' => 'cdata-string-double',
+					"'" => 'cdata-string-single'		),
+					
+			# <other...>_
+			array(	'<' => 'tag-start'					)
+		),
+		
+	);
+
+	public function build($file) {
+		
+		//If the LHTML file does not exist throw an exception
+		if(!is_file($file))
+			throw new \Exception('LHTML could not load `$file`');
+		
+		// Get file contents
+		$lhtml = file_get_contents($file);
+		
+		// Parse file into stack
+		$stack = $this->parse($lhtml);
+		
+		var_dump($stack);die;
+		
+		// Return stack output
+		return $stack->output();
+	}
+	
+	public function parse(&$lhtml) {
+		
+		// Reset line number
+		$this->lineNumber = 1;
+		$this->colNumber = 1;
+		
+		// Setup stack
+		$stack = null;
+		
+		// Go through the code one char at a time, starting with default token
+		$length = strlen($lhtml);
+		$tokens = array();
+		$token = 'default';
+		$queue = '';
+		$x = $this->parserSyntax;
+		for($pointer = 0; $pointer < $length; $pointer++) {
+			
+			// Get char
+			$char = substr($lhtml, $pointer, 1);
+			
+			// Increment line count
+			if($char == "\n" || $char == "\r") {
+				$this->lineNumber++;
+				$this->colNumber = 0;
+			}
+			
+			// Increment column count
+			$this->colNumber++;
+			
+			// Check that the current token is defined
+			if(!isset($x[$token]))
+				throw new Exception("The parser has encountered an invalid $token token");
+			
+			// Check if the current token has an action for this char
+			if($char === "\n" || $char === "\r" || $char === "\t")
+				$checksp = true;
+			else
+				$checksp = false;
+			$literal = isset($x[$token][$checksp ? ' ' : $char]);
+			$star = isset($x[$token]['*']);
+			if($literal || $star) {
+				$ntoken = $x[$token][$literal ? $char : '*'];
+				if(is_array($ntoken)) {
+					var_dump($tokens);die;
+				}
+				
+				// Handle 'error' token
+				if($ntoken === 'error') {
+					throw new Exception("LTHML Syntax Error: Unexpected <code><b>$char</b></code> after $token on line $this->lineNumber at column $this->colNumber, code: $queue$char");
+				}
+				
+				// Handle !tokens by immediately processing new token with same char
+				if(substr($ntoken, 0, 1) === '!') {
+					$tokens[] = array('token' => $token, 'value' => $queue);
+					$token = substr($ntoken, 1);
+					$queue = $char;
+				}
+				
+				// Normal tokens, they process on next char
+				else {
+					$tokens[] = array('token' => $token, 'value' => $queue);
+					$token = $ntoken;
+				}
+			}
+			
+			// If no match for character, add to queue
+			else {
+				$queue .= $char;
+			}
+			
+			continue;
+			
+			if(!$stack && (!($stack instanceof Node))) $stack = new Node($name);
+			else $stack = $stack->_nchild($name);
+		}
+		return $stack;
+	}
+
+}
+
+// DELETE EVERYTHING BELOW THIS BLOCK
+// DELETE EVERYTHING BELOW THIS BLOCK
+// DELETE EVERYTHING BELOW THIS BLOCK
+// DELETE EVERYTHING BELOW THIS BLOCK
+// DELETE EVERYTHING BELOW THIS BLOCK
+// DELETE EVERYTHING BELOW THIS BLOCK
+// DELETE EVERYTHING BELOW THIS BLOCK
+// DELETE EVERYTHING BELOW THIS BLOCK
+// DELETE EVERYTHING BELOW THIS BLOCK
+// DELETE EVERYTHING BELOW THIS BLOCK
+// DELETE EVERYTHING BELOW THIS BLOCK
+// DELETE EVERYTHING BELOW THIS BLOCK
+// DELETE EVERYTHING BELOW THIS BLOCK
 
 define(__NAMESPACE__.'\LHTML_VAR_REGEX', "/{([\w:|.\,\(\)\/\-\% \[\]\?'=]+?)}/");
 define(__NAMESPACE__.'\LHTML_VAR_REGEX_SPECIAL', "/{(\%[\w:|.\,\(\)\[\]\/\-\% ]+?)}/");
@@ -158,7 +386,7 @@ class Parser {
 		/**
 		 * End While Loop
 		 */
-						
+		var_dump($stack);die;				
 		return $stack->output();
 	}
 	
