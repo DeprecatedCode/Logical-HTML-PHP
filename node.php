@@ -64,13 +64,20 @@ class Node {
 		 * Render the code
 		 */
 		$output .= "<$this->element".$attrs.'>';
-		if(!empty($this->children)) foreach($this->children as $child) {
+		if(!empty($this->children)) foreach($this->children as $child) {			
 			if($child instanceof Node) $output .= $child->output();
 			else if(is_string($child)) $output .= $child;
 		}
 		$output .= "</$this->element>";
 		
 		return $output;
+	}
+	
+	public function render() {
+		$scope = new Scope;
+		$output = $this->output();
+		$output = $scope->map($output);
+		return $output['vars'][0];
 	}
 	
 }

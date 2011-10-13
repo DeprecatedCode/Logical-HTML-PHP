@@ -54,7 +54,7 @@ class Parser {
 		/**
 		 * Return the parsed data
 		 */
-		echo $output;
+		return $output;
 	}
 	
 	public function parse() {
@@ -158,10 +158,8 @@ class Parser {
 		/**
 		 * End While Loop
 		 */
-		
-		//var_dump($stack);
-				
-		return $stack->output();
+						
+		return $stack->render();
 	}
 	
 	public function parse_tag($force_html) {
