@@ -77,8 +77,8 @@ class Node {
 	public function _init_scope($new = false){
 		if(!$new) {
 			$var = false;
-			if(isset($this->attr[':load']))
-				$var = $this->attr[':load'];
+			if(isset($this->attributes[':load']))
+				$var = $this->attributes[':load'];
 			if(!$var) return false;
 
 			list($source, $as) = explode(' as ', $var);	
@@ -114,7 +114,7 @@ class Node {
 		$protocol = empty($_SERVER['HTTPS'])? 'http': 'https';
 		$static_protocol = empty($_SERVER['HTTPS'])? 'http://assets': 'https://secure';
 		$html = '';
-		foreach($this->attr as $attr => $value) {			
+		foreach($this->attributes as $attr => $value) {			
 			$vars = $this->extract_vars($value);
 			if($vars) {
 				foreach($vars as $var) {
@@ -158,14 +158,6 @@ class Node {
 			if(strlen($value) > 0) $html .= " $attr=\"$value\"";
 		}
 		return $html;
-	}
-	
-	
-	public function render() {
-		$scope = new Scope;
-		$output = $this->output();
-		$output = $scope->map($output);
-		return $output['vars'][0];
 	}
 	
 	/**

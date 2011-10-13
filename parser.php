@@ -159,7 +159,7 @@ class Parser {
 		 * End While Loop
 		 */
 						
-		return $stack->render();
+		return $stack->output();
 	}
 	
 	public function parse_tag($force_html) {
