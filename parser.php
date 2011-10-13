@@ -5,94 +5,95 @@ use \Exception;
 
 class Parser2 {
 	
+	public $fileName;
 	public $lineNumber;
 	public $colNumber;
 	
 	public $cdataTags = array('script', 'style');
 	
 	// The entire syntax is defined here as what token the next char implies
-	private $parserSyntax = array(
+	private $tokenRules = array(
 		
 		# _
 		'default' 			=> array(	'<' => 'tag-start' 			),
 		
 		# <_
-		'tag-start' 		=> array(	' ' => 'error',
-										'<' => 'error',
-										'>' => 'error',
-										'"' => 'error',
-										"'" => 'error',
+		'tag-start' 		=> array(	' ' => '#error',
+										'<' => '#error',
+										'>' => '#error',
+										'"' => '#error',
+										"'" => '#error',
 										'/' => 'tag-close',
-										'*' => '!tag-open-name' 		),
+										'*' => '&tag-open-name' 		),
 		# </_					
-		'tag-close'			=> array(	' ' => 'error',
-										'/' => 'error',
-										'<' => 'error',
-										'>' => 'error',
-										'"' => 'error',
-										"'" => 'error',
-										'*' => '!tag-close-name'		),
+		'tag-close'			=> array(	' ' => '#error',
+										'/' => '#error',
+										'<' => '#error',
+										'>' => '#error',
+										'"' => '#error',
+										"'" => '#error',
+										'*' => '&tag-close-name'		),
 		# <a_								
 		'tag-open-name' 	=> array(	' ' => 'tag-open-body',
-										'<' => 'error',
+										'<' => '#error',
 										'>' => 'tag-end-inside',
-										'"' => 'error',
-										"'" => 'error',
+										'"' => '#error',
+										"'" => '#error',
 										'/' => 'tag-end-close'		),
 		# </a_							
-		'tag-close-name' 	=> array(	' ' => 'error',
-										'<' => 'error',
+		'tag-close-name' 	=> array(	' ' => '#error',
+										'<' => '#error',
 										'>' => 'tag-end-outside',
-										'"' => 'error',
-										"'" => 'error',
-										'/' => 'error'				),
+										'"' => '#error',
+										"'" => '#error',
+										'/' => '#error'				),
 		# <a ... _						
 		'tag-open-body'		=> array(	' ' => '#drop',
-										'<' => 'error',
+										'<' => '#error',
 										'>' => 'tag-end-inside',
-										'"' => 'error',
-										"'" => 'error',
+										'"' => '#error',
+										"'" => '#error',
 										'/' => 'tag-end-close',
-										'*' => '!tag-attr-name'		),
+										'*' => '&tag-attr-name'		),
 		# <a ... b_						
-		'tag-attr-name'		=> array(	' ' => 'error',
-										'<' => 'error',
-										'>' => 'error',
-										'"' => 'error',
-										"'" => 'error',
-										'/' => 'error',
+		'tag-attr-name'		=> array(	' ' => '#error',
+										'<' => '#error',
+										'>' => '#error',
+										'"' => '#error',
+										"'" => '#error',
+										'/' => '#error',
 										'=' => 'tag-attr-equal'		),
 		# <a ... b=_						
-		'tag-attr-name'		=> array(	'"' => 'tag-attr-quote',
-										'*' => 'error'				),
+		'tag-attr-equal'		=> array(	'"' => 'tag-attr-quote',
+											'*' => '#error'			),
 		# <a ... b="_						
 		'tag-attr-quote'	=> array(	'"' => 'tag-attr-qend',
-										'*' => '!tag-attr-value'	),
+										'*' => '&tag-attr-value'	),
 		# <a ... b="c_						
 		'tag-attr-value'	=> array(	'escape' => '\\',
 										'"' => 'tag-attr-qend'		),
 		# <a ... b="c"_						
-		'tag-attr-qend'		=> array(	'*' => '!tag-open-body'		),
+		'tag-attr-qend'		=> array(	'*' => '&tag-open-body'		),
 		
 		# <a ... /_								
-		'tag-end-close' 	=> array(	' ' => 'error',
-										'<' => 'error',
+		'tag-end-close' 	=> array(	' ' => '#error',
+										'<' => '#error',
 										'>' => 'tag-end-outside',
-										'"' => 'error',
-										"'" => 'error',
-										'/' => 'error'				),
+										'"' => '#error',
+										"'" => '#error',
+										'/' => '#error'				),
 		# <a ... />_ or </a>_							
-		'tag-end-outside'	=> array(	'*' => '!default'			),
+		'tag-end-outside'	=> array(	'*' => '&default'			),
 										
 		# <a>_						
 		'tag-end-inside' => array(	'type' => 'conditional',
 		
 			# <script...>_
 			array(	'token' 	=> 'tag-open-name',
-					'equals'	=> 'script',
+					'value'		=> 'script',
 					
 					'special'	=> array(
-						'</script>'	=> '!default',
+						'</script>'	=> '&default',
 						'//'		=> 'cdata-line-comment',
 						'/*'		=> 'cdata-block-comment',
 					),
@@ -102,10 +103,10 @@ class Parser2 {
 			
 			# <style...>_
 			array(	'token' 	=> 'tag-open-name',
-					'equals'	=> 'style',
+					'value'		=> 'style',
 					
 					'special'	=> array(
-						'</style>'	=> '!default',
+						'</style>'	=> '&default',
 						'/*'		=> 'cdata-block-comment',
 					),
 					
@@ -128,7 +129,15 @@ class Parser2 {
 		$lhtml = file_get_contents($file);
 		
 		// Parse file into stack
-		$stack = $this->parse($lhtml);
+		try {
+			$tokens = $this->tokenize($lhtml, $this->tokenRules);
+		} catch(Exception $exception) {
+			throw new Exception($exception->getMessage() . " in file $file", 0, $exception);
+		}
+		
+		var_dump($tokens);die;
+		
+		// TODO GENERATE STACK FROM TOKENS - THIS KEEPS FEATURES SEPARATE
 		
 		var_dump($stack);die;
 		
@@ -136,68 +145,134 @@ class Parser2 {
 		return $stack->output();
 	}
 	
-	public function parse(&$lhtml) {
+	/** tokenize **/
+	public function tokenize(&$source, &$rules, $token = 'default') {
 		
 		// Reset line number
-		$this->lineNumber = 1;
-		$this->colNumber = 1;
-		
-		// Setup stack
-		$stack = null;
+		$lineNumber = 1;
+		$colNumber = 1;
 		
 		// Go through the code one char at a time, starting with default token
-		$length = strlen($lhtml);
+		$length = strlen($source);
 		$tokens = array();
-		$token = 'default';
 		$queue = '';
-		$x = $this->parserSyntax;
-		for($pointer = 0; $pointer < $length; $pointer++) {
+		$processImmediately = false;
+		for($pointer = 0; $pointer < $length; true) {
 			
-			// Get char
-			$char = substr($lhtml, $pointer, 1);
-			
-			// Increment line count
-			if($char == "\n" || $char == "\r") {
-				$this->lineNumber++;
-				$this->colNumber = 0;
+			// Check if processing a forwarded $char
+			if($processImmediately) {
+				
+				// Shut off process flag
+				$processImmediately = false;
 			}
 			
-			// Increment column count
-			$this->colNumber++;
+			// Else get a new $char
+			else {
+				
+				// Step ahead
+				$pointer++;
+				
+				// Get char
+				$char = substr($source, $pointer, 1);
+				
+				// Increment line count
+				if($char == "\n" || $char == "\r") {
+					$lineNumber++;
+					$colNumber = 0;
+				}
+				
+				// Increment column count
+				$colNumber++;
+			}
 			
 			// Check that the current token is defined
-			if(!isset($x[$token]))
-				throw new Exception("The parser has encountered an invalid $token token");
+			if(!isset($rules[$token]))
+				throw new Exception("The tokenizer has encountered an invalid <i>$token</i> token");
 			
-			// Check if the current token has an action for this char
+			// Use the token
+			$xtoken = $rules[$token];
+			
+			// Check for special token types
+			if(isset($xtoken['type'])) {
+				switch($xtoken['type']) {
+					
+					// Check if the token is conditional, which means that there's a choice of
+					// which token rules to follow, depending on the conditions specified.
+					case 'conditional':
+						$last = count($tokens);
+						$last = $tokens[$last - 1];
+						
+						// Loop through all possible conditions
+						foreach($xtoken as $key => $condtoken) {
+						
+							// Skip the type
+							if($key === 'type')
+								continue;
+						
+							// Check that the token matches the condition, if set
+							if(isset($condtoken['token']) && $condtoken['token'] !== $last['token'])
+								continue;
+								
+							// Check for matching value or catch-all condition
+							if(!isset($condtoken['value']) || $condtoken['value'] === $last['value']) {
+								
+								// Switch to this version of the token
+								$xtoken = $condtoken;
+								break 2;
+							}
+						}
+						
+						// If no conditional match found, throw exception
+						throw new Exception("LTML Tokenize Error: The tokenizer has encountered a conditional token <i>$token</i> ".
+							"that has no valid match for the last token <i>$last[token]</i> and value <code>$last[value]</code>");
+						
+					default:
+						throw new Exception("LTML Tokenize Error: The tokenizer has encountered an invalid token type <code>".
+							$xtoken['type']."</code> for token <i>$token</i>");
+				
+				}
+			}
+			
+			// Whether to check for the ' ' space token, matches all whitespace
 			if($char === "\n" || $char === "\r" || $char === "\t")
-				$checksp = true;
+				$checkchar = ' ';
 			else
-				$checksp = false;
-			$literal = isset($x[$token][$checksp ? ' ' : $char]);
-			$star = isset($x[$token]['*']);
+				$checkchar = $char;
+			
+			// Check if the current token has an action for this char, both literal and *
+			$literal = isset($xtoken[$checkchar]);
+			$star = isset($xtoken['*']);
 			if($literal || $star) {
-				$ntoken = $x[$token][$literal ? $char : '*'];
-				if(is_array($ntoken)) {
-					var_dump($tokens);die;
+				
+				// Load the next token
+				$ntoken = $xtoken[$literal ? $checkchar : '*'];
+				
+				// Handle '#drop' token
+				if($ntoken === '#drop') {
+					continue;	
 				}
 				
-				// Handle 'error' token
-				if($ntoken === 'error') {
-					throw new Exception("LTHML Syntax Error: Unexpected <code><b>$char</b></code> after $token on line $this->lineNumber at column $this->colNumber, code: $queue$char");
+				// Handle '#error' token
+				if($ntoken === '#error') {
+					//var_dump($tokens);
+					//var_dump(array('token' => $token, 'queue' => $queue));
+					throw new Exception("Unexpected <code><b>'$char'</b></code>
+						after <i>$token</i> on line $lineNumber at column $colNumber, code: <code>$queue$char</code>");
 				}
 				
-				// Handle !tokens by immediately processing new token with same char
-				if(substr($ntoken, 0, 1) === '!') {
-					$tokens[] = array('token' => $token, 'value' => $queue);
+				// Add the current token to the stack and handle queue
+				$tokens[] = array('token' => $token, 'value' => $queue);
+				
+				// Handle &tokens by immediately queueing the same char on the new token
+				if(substr($ntoken, 0, 1) === '&') {
 					$token = substr($ntoken, 1);
-					$queue = $char;
+					$processImmediately = true;
 				}
 				
-				// Normal tokens, they process on next char
+				// Normal tokens will start queue on next char
 				else {
-					$tokens[] = array('token' => $token, 'value' => $queue);
 					$token = $ntoken;
+					$queue = '';
 				}
 			}
 			
@@ -205,14 +280,17 @@ class Parser2 {
 			else {
 				$queue .= $char;
 			}
+		}
+		
+		// Return tokens
+		return $tokens;
+	}
+	/*
 			
 			continue;
 			
 			if(!$stack && (!($stack instanceof Node))) $stack = new Node($name);
-			else $stack = $stack->_nchild($name);
-		}
-		return $stack;
-	}
+			else $stack = $stack->_nchild($name);*/
 
 }
 
