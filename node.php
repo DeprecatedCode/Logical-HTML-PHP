@@ -18,6 +18,8 @@ class Node {
 	
 	public $_;
 	
+	public $complete_tags = array('br','hr','link','img');
+	
 	public function __construct($element, $parent = false) {		
 		$this->fake_element = $element;
 		$this->element = $element;
@@ -70,6 +72,8 @@ class Node {
 		/**
 		 * Render the code
 		 */
+		if(in_array($this->element, $this->complete_tags)) return "<$this->element".$this->_attributes_parse().' />';
+		
 		$output .= "<$this->element".$this->_attributes_parse().'>';
 		if(!empty($this->children)) foreach($this->children as $child) {			
 			if($child instanceof Node) $output .= $child->output();
