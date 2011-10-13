@@ -149,7 +149,6 @@ class tag_else extends \lhtml\node {
 		/**
 		 * Render the code
 		 */
-		var_dump($this->show_else);
 		if($this->show_else){
 			if(!empty($this->children)) foreach($this->children as $child) {			
 				if(is_object($child)) $output .= $child->output();
