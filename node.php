@@ -2,22 +2,33 @@
 
 namespace lhtml;
 
+$d = dir(__DIR__.'/tags'); 
+while($filename = $d->read()) { 
+	if(substr($filename,0,1) !='.') include_once(__DIR__."/tags/$filename");
+} $d->close();
+
 class Node {
 	
 	public $element;
+	public $fake_element;
 	public $attributes = array();
 	public $children = array();
 	
+	public $cc = 0;
+	
 	public $_;
 	
-	public function __construct($element, $parent = false) {
+	public function __construct($element, $parent = false) {		
+		$this->fake_element = $element;
 		$this->element = $element;
 		if($parent) $this->_ = $parent;
 		if(!is_object($this->_)) $this->_data = new Scope;
 	}
 	
 	public function _nchild($name) {
-		$nchild = new Node($name, $this);
+		$class_name = str_replace(':','',"\lhtml\\tags\\tag_$name");
+		if(strpos($name, ':') === 0) $nchild = new $class_name($name, $this);
+		else $nchild = new Node($name, $this);
 		$this->children[] =& $nchild;
 		return $nchild;
 	}
@@ -163,7 +174,7 @@ class Node {
 	/**
 	 * Extract Variables
 	 */
-	private function extract_vars($content) {
+	protected function extract_vars($content) {
 		
 		if(strpos($content, '{') === false) return array();
 		// parse out the variables
@@ -182,7 +193,7 @@ class Node {
 		
 	}
 	
-	private function extract_subvars($content) {
+	protected function extract_subvars($content) {
 		
 		if(strpos($content, '[') === false) return array();
 		// parse out the variables
@@ -201,7 +212,7 @@ class Node {
 		
 	}
 	
-	private function extract_funcs($content) {
+	protected function extract_funcs($content) {
 		if(strpos($content, '(') === false) return array();
 		// parse out the variables
 		preg_match_all(
