@@ -57,6 +57,8 @@ class tag_if extends \lhtml\node {
 		if($v[0] === false) $v[0] = 'false';
 		if($v[2] === false) $v[2] = 'false';
 		
+		$v = array($v[0], $v[1], $v[2]);
+		
 		$v = implode(' ', $v);
 				
 		eval("\$retval = ".$v.';');

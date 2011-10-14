@@ -10,7 +10,7 @@ class tag_include extends \lhtml\node {
 	
 	public function output() {
 		$this->process();
-		parent::output();
+		return parent::output();
 	}
 	
 	public function process() {
