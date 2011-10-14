@@ -257,23 +257,72 @@ class Parser2 {
 			die;
 		}
 		
-		// GENERATE STACK FROM TOKENS - THIS KEEPS FEATURES SEPARATE
+		// Track open tags
 		$openTags = array();
-		$openTagsDepth = 0;
-		$currentlyIn = '';
+		$openTagsDepth = -1;
+		
+		// Create the root stack
+		$stack = new Node('');
 		foreach($tokens as $token) {
 			
 			// Decide what to do based on token
 			switch($token->name) {
+				
+				// Open tag
 				case 'tag-open-name':
-					$openTags[$openTagsDepth];
+					
+					// Record open tag
+					$openTagsDepth++;
+					$openTags[$openTagsDepth] = $token->value;
+					
+					// Add element to the node stack
+					$stack = $stack->_nchild($token->value);
+					break;
+					
+				// Close tag
+				case 'tag-end-close':
+				case 'tag-close-name':
+					
+					// Check for long (full) tag
+					$long = $token->name === 'tag-close-name';
+					
+					// Check that this matches the currently open tag
+					$oname = $openTags[$openTagsDepth];
+					if($long && $oname !== $token->value)
+						throw new Exception("LHTML Parse Error: Found closing tag `&lt;/$token->value&gt;`
+						when `&lt;$oname&gt;`still needs to be closed
+						on line $token->line at character $token->col");	
+					
+					// Close the tag
+					unset($openTags[$openTagsDepth]);
+					$openTagsDepth--;
+					
+					// Move up the stack
+					$stack = $stack->_;
+					break;
+				
+				// Tag attribute name
+				case 'tag-attr-name':
+					$attr = $token->value;
+					break;
+					
+				// Tag attribute value
+				case 'tag-attr-value':
+					$stack->_attr($attr, $token->value);
+					break;
+					
+				// Tag contents
+				case 'default':
+				case 'tag-contents':
+					
+					// Save the string as a child
+					$stack->_nchild($token->value);
+					break;
+					
 				default:
 					continue;
 			}
-			if(!$stack && (!($stack instanceof Node))) $stack = new Node($name);
-			else $stack = $stack->_nchild($name);
 		}
-		
 		
 		if(isset($_GET['--stack'])) {
 			var_dump($stack);die;
@@ -439,281 +488,4 @@ class Parser2 {
 		// Return tokens
 		return $tokens;
 	}
-}
-
-// DELETE EVERYTHING BELOW THIS BLOCK
-// DELETE EVERYTHING BELOW THIS BLOCK
-// DELETE EVERYTHING BELOW THIS BLOCK
-// DELETE EVERYTHING BELOW THIS BLOCK
-// DELETE EVERYTHING BELOW THIS BLOCK
-// DELETE EVERYTHING BELOW THIS BLOCK
-// DELETE EVERYTHING BELOW THIS BLOCK
-// DELETE EVERYTHING BELOW THIS BLOCK
-// DELETE EVERYTHING BELOW THIS BLOCK
-// DELETE EVERYTHING BELOW THIS BLOCK
-// DELETE EVERYTHING BELOW THIS BLOCK
-// DELETE EVERYTHING BELOW THIS BLOCK
-// DELETE EVERYTHING BELOW THIS BLOCK
-
-define(__NAMESPACE__.'\LHTML_VAR_REGEX', "/{([\w:|.\,\(\)\/\-\% \[\]\?'=]+?)}/");
-define(__NAMESPACE__.'\LHTML_VAR_REGEX_SPECIAL', "/{(\%[\w:|.\,\(\)\[\]\/\-\% ]+?)}/");
-
-class Parser {
-	
-	public $file_name;
-	public $file_cont;
-	
-	public $line_numb = 0;
-	public $line_cont;
-	
-	public $cache;
-	public $nodestack;
-
-	public $parse_time = 0;
-	
-	public $html_tags = array('script','style');
-	private $pointer = 0;
-	
-	public function __construct() {
-	}
-	
-	public function build($file) {
-		/**
-		 * If the LHTML file does not exist throw an exception
-		 */
-		if(!file_exists($file)) throw new \Exception('LHTML Could not load $file');
-		
-		/**
-		 * Check to see if a valid cache exists and use it
-		 * Else pull in the LHTML file
-		 */		
-		$cache = __DIR__.'/cache/'.md5($file.$_SERVER['HTTP_HOST']);
-		//if(@filemtime($file) < @filemtime($cache)) $this->file_cont = @file_get_contents($cache);
-		//else $this->file_cont = @file_get_contents($file);
-		$this->file_cont = @file_get_contents($file);
-				
-		/**
-		 * Parse the LHTML file
-		 */
-		$time = microtime(true);		
-		$output = $this->parse();
-		$this->parse_time = microtime(true) - $time;
-		
-		/**
-		 * Save a cache
-		 */
-		file_put_contents($cache, $output);
-		
-		/**
-		 * Return the parsed data
-		 */
-		return $output;
-	}
-	
-	public function parse() {
-		/**
-		 * Create new Interdace and assign it to workable variables
-		 */
-		
-		/**
-		 * Create holders to determine open tags
-		 * and cdata
-		 */
-		$open_tags = array();
-		$open_tag_id = 0;
-		$force_html = false;
-				
-		/**
-		 * Loop through each tag
-		 */
-		while($tag = $this->parse_tag($force_html)) {
-			/**
-			 * Extract the variables from the array
-			 */
-			extract($tag);
-			
-			/**
-			 * If the tags contents must be treated as html based on tag type
-			 */
-			if($type == 'open' && in_array($name, $this->html_tags)) $force_html = $name;
-			else $force_html = false;
-			
-			/**
-			 * Process comment in the interface
-			 */
-			if($type == 'comment') $stack->_cdata($name);
-			
-			/**
-			 * Show parse error if an expected closing tag does not occur
-			 */
-			if($type == 'close' && $name !== $open_tags[$open_tag_id])
-				throw new \Exception('LHTML Parse Error', $this->file_name, $this->line_numb, 'I was expecting the end tag <code>&lt;/'.$open_tags[$open_tag_id].'&gt;</code>, instead I got <code>&lt;/'.$tag_name.'&gt;</code>');
-			
-			/**
-			 * Handle each tag type based on its type
-			 */
-			switch($type) {
-				case 'open':
-					/**
-					 * Increment open tag ID
-					 */
-					$open_tag_id++;
-					$open_tags[$open_tag_id] = $name;
-					
-					/**
-					 * If no stack has been initialized, create one else create a new node
-					 */
-					if(!$stack && (!($stack instanceof Node))) $stack = new Node($name);
-					else $stack = $stack->_nchild($name);					
-					
-					/**
-					 * Process the tags attributes
-					 */
-					$stack->_attrs($attributes);
-				break;
-				case 'complete':
-					/**
-					 * If no stack has been initialized, create one else create a new node
-					 */
-					if(!$stack && (!($stack instanceof Node))) $stack = new Node($name);
-					else $stack = $stack->_nchild($name);
-					
-					/**
-					 * Process the tags attributes then step down the stack
-					 */
-					$stack->_attrs($attributes);
-					if($stack->_ instanceof Node) $stack = $stack->_;
-				break;
-				case 'close':
-					/**
-					 * Decrement open tag ID
-					 */
-					unset($open_tags[$open_tag_id]);
-					$open_tag_id--;
-					
-					/**
-					 * Step down the stack
-					 */
-					if($stack->_ instanceof Node) $stack = $stack->_;
-				break;
-				case 'cdata':
-					/**
-					 * Send the cdata to the stack
-					 */
-					$stack->_cdata($name);
-				break;
-			}		
-			/**
-			 * End Switch
-			 */
-				
-		}
-		/**
-		 * End While Loop
-		 */
-		var_dump($stack);die;				
-		return $stack->output();
-	}
-	
-	public function parse_tag($force_html) {
-		/**
-		 * Search for the opening or closing tag
-		 */
-		$search = $force_html ? strpos($this->file_cont, '</'.$force_html.'>', $this->pointer) : strpos($this->file_cont, '<', $this->pointer);
-		
-		/**
-		 * Is this new tag a comment
-		 */
-		$comment = strpos($this->file_cont, '!--', $search) - $search == 1 ? true : false;
-		
-		/**
-		 * If no tag was found return false
-		 */
-		if($search === false) return false;
-		
-		/**
-		 * Return cdata
-		 */
-		$node = trim(substr($this->file_cont, $this->pointer, $search - $this->pointer));
-		if(strlen($node) != 0) {
-			$this->pointer = $search;						
-			return array('type' => 'cdata', 'name' => $node, 'attributes'=> false);
-		}
-		
-		/**
-		 * Find the end of the tag
-		 */
-		$close = $comment ? strpos($this->file_cont, '-->', $search) + 3 : strpos($this->file_cont, '>', $search) + 1;
-		
-		/**
-		 * Set the pointer to the position of the end of the tag
-		 */
-		$this->pointer = $close;
-		
-		/**
-		 * Grab the whole tag
-		 */
-		$tag = substr($this->file_cont, $search, $close - $search);
-		
-		/**
-		 * Prepare Return Array
-		 */
-		$return = array();
-		
-		/**
-		 * Is this a comment if so set its attributes
-		 */
-		if($comment) {
-			$return['name'] = $tag;
-			$return['type'] = 'comment';
-			$return['attributes'] = false;
-		}
-		
-		/**
-		 * If the tag is not a comment set its attributes
-		 */
-		if(!$comment) {
-			/**
-			 * Strip the attributes from the tag if there are any
-			 * And grab just the tag name.
-			 */
-			$return['name'] = strpos($tag, ' ') !== false ? trim(substr($tag, 1, strpos($tag, ' ')), '<>/ ') : trim($tag, '<>/ ');
-			
-			/**
-			 * Determine what type of tag this is
-			 */
-			$return['type'] = strpos($tag, '/>') !== false ? 'complete' : (strpos($tag, '</') !== false ? 'close' : 'open');
-			
-			/**
-			 * Parse the attributes of a tag (if there are any)
-			 */
-			$return['attributes'] = $this->get_attributes($tag);
-		}
-		
-		/**
-		 * Return the tag
-		 */
-		return $return;
-	}	
-	
-	private function get_attributes($tag){
-		/**
-		 * Regex match the attributes
-		 */
-		preg_match_all('/(?:([^\s]*[\:]*[^\s]*))="(?:([^"]*))"/', $tag, $matches, PREG_SET_ORDER);
-		
-		/**
-		 * Loop thru the matches and assign them to an array
-		 */
-		$attrs = array();
-		foreach($matches as $match) {
-			$attrs[$match[1]] = $match[2];
-		}
-				
-		/**
-		 * Return the list of variables
-		 */
-		return $attrs;
-	}	
-	
 }

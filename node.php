@@ -44,6 +44,20 @@ class Node {
 		$this->children[] = $cdata;  return true;
 	}
 	
+	public function _attr($name, $value = null) {
+		/**
+		 * Check if the attributes array is setup
+		 */
+		if(!is_array($this->attributes)) {
+			$this->attributes = array();
+		}
+		
+		/**
+		 * Save the attribute to the array
+		 */
+		$this->attributes[$name] = $value; return true;
+	}
+	
 	public function _attrs($attrs) {
 		/**
 		 * If the attributes are already formatted as an array
@@ -68,24 +82,29 @@ class Node {
 	
 	public function output() {
 		$this->_init_scope();
+		$output = "";
 		
 		/**
 		 * Render the code
 		 */
 		if(in_array($this->element, $this->complete_tags)) return "<$this->element".$this->_attributes_parse().' />';
 		
-		$output .= "<$this->element".$this->_attributes_parse().'>';
+		if($this->element !== '')
+			$output .= "<$this->element".$this->_attributes_parse().'>';
+		
 		if(!empty($this->children)) foreach($this->children as $child) {			
 			if($child instanceof Node) $output .= $child->output();
 			else if(is_string($child)) $output .= $this->_string_parse($child);
 		}
-		$output .= "</$this->element>";
+		
+		if($this->element !== '')
+			$output .= "</$this->element>";
 		
 		return $output;
 	}
 	
 	public function _data() {
-		if($this->_data) return $this->_data;
+		if(isset($this->_data)) return $this->_data;
 		else return $this->_->_data();
 	}
 	
