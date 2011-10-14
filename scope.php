@@ -17,7 +17,7 @@ class Scope {
 	
 	public $timers = array();
 	
-	public static $hooks;
+	public static $hooks = array();
 	
 	public function get_data() {
 		$s = $this->source;
