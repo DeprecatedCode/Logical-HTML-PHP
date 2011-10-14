@@ -116,11 +116,11 @@ class Parser {
 		
 	);
 
-	public function build($file) {
+	public function build($file, $retstack = false) {
 		
 		//If the LHTML file does not exist throw an exception
 		if(!is_file($file))
-			throw new \Exception('LHTML could not load `$file`');
+			throw new \Exception("LHTML could not load `$file`");
 		
 		// Get file contents
 		$lhtml = file_get_contents($file);
@@ -329,7 +329,8 @@ class Parser {
 		}
 		
 		// Return stack output
-		return $stack->output();
+		if($retstack) return $stack;
+		else return $stack->output();
 	}
 	
 	/** tokenize **/
