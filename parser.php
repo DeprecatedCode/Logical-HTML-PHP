@@ -316,7 +316,7 @@ class Parser2 {
 				case 'tag-contents':
 					
 					// Save the string as a child
-					$stack->_nchild($token->value);
+					$stack->_cdata($token->value);
 					break;
 					
 				default:
