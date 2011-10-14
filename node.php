@@ -42,7 +42,14 @@ class Node {
 		 * Initialize a new Scope if one does not exist
 		 */
 		if(!is_object($this->_)) $this->_data = new Scope;
+		
+		/**
+		 * Run any initialization scripts for the custom tags
+		 */
+		$this->init();
 	}
+	
+	public function init() {}
 	
 	public function _nchild($name) {
 		/**

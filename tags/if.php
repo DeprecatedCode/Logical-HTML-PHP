@@ -4,8 +4,7 @@ namespace lhtml\tags;
 
 class tag_if extends \lhtml\node {
 	
-	public function __construct($element = false, $parent = false) {
-		parent::__construct($element, $parent);
+	public function init() {
 		$this->element = false;
 	}
 	
