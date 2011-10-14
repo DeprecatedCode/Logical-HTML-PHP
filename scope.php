@@ -17,6 +17,8 @@ class Scope {
 	
 	public $timers = array();
 	
+	public static $hooks;
+	
 	public function get_data() {
 		$s = $this->source;
 		if($s) return $this->parent->$s;
@@ -24,9 +26,10 @@ class Scope {
 	}
 	
 	public function __construct($parent = false) {
-		if($parent instanceof Node) $this->parent = $parent;
 		$this->timers['scope->map'] = 0;
 		$this->timers['scope->get'] = 0;
+		self::$hooks[':get'] = $_GET;
+		self::$hooks[':post'] = $_POST;
 	}
 	
 	public function get($var_map) {
@@ -41,15 +44,10 @@ class Scope {
 		
 		$flag_first = false;
 		
-		if(substr($map[0], 0, 1) == ':') switch($map[0]) {
-			case ':get':
-				$source = $_GET;
-				$flag_first = 1;
-			break;
-			case ':post':
-				$source = $_POST;
-				$flag_first = 1;
-			break;
+		if(substr($map[0], 0, 1) == ':') foreach(self::$hooks as $hmap=>$hobj) {
+			if($map[0] !== $hmap) continue;
+			$source = $hobj;
+			$flag_first = 1;
 		}
 		
 		if(!$flag_first) {
