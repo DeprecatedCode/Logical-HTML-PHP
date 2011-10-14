@@ -28,8 +28,10 @@ class Scope {
 	public function __construct($parent = false) {
 		$this->timers['scope->map'] = 0;
 		$this->timers['scope->get'] = 0;
-		self::$hooks[':get'] = $_GET;
-		self::$hooks[':post'] = $_POST;
+		
+		self::$hooks =& bundle::$hooks;
+		self::$hooks[':get'] =& $_GET;
+		self::$hooks[':post'] =& $_POST;
 	}
 	
 	public function get($var_map) {

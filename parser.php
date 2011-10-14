@@ -3,7 +3,7 @@
 namespace lhtml;
 use \Exception;
 
-class Parser2 {
+class Parser {
 	
 	// The entire syntax is defined here as what token the next char implies
 	private $tokenRules = array(
