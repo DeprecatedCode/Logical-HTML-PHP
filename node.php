@@ -128,7 +128,7 @@ class Node {
 		/**
 		 * If is a real element create the opening tag
 		 */
-		if($this->element !== '') $output .= "<$this->element".$this->_attributes_parse().'>';
+		if($this->element !== '' && $this->element) $output .= "<$this->element".$this->_attributes_parse().'>';
 		
 		/**
 		 * Loop thru the children and populate this tag
@@ -141,7 +141,7 @@ class Node {
 		/**
 		 * Close the tag
 		 */
-		if($this->element !== '') $output .= "</$this->element>";
+		if($this->element !== '' && $this->element) $output .= "</$this->element>";
 		
 		/**
 		 * Return the rendered page
