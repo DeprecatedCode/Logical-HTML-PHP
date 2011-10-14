@@ -2,6 +2,9 @@
 
 namespace lhtml;
 
+/**
+ * Load LHTML Functions
+ */
 $d = dir(__DIR__.'/tags'); 
 while($filename = $d->read()) { 
 	if(substr($filename,0,1) !='.') include_once(__DIR__."/tags/$filename");
@@ -9,28 +12,54 @@ while($filename = $d->read()) {
 
 class Node {
 	
+	/**
+	 * Parts of the element
+	 */
 	public $element;
 	public $fake_element;
 	public $attributes = array();
 	public $children = array();
 	
-	public $cc = 0;
-	
+	/**
+	 * Parent in the Node Stack
+	 */
 	public $_;
 	
-	public $complete_tags = array('br','hr','link','img');
+	/**
+	 * Tags that are complete
+	 */
+	public static $complete_tags = array('br','hr','link','img');
 	
 	public function __construct($element, $parent = false) {		
+		/**
+		 * Initialize the element and set the parent if one exists
+		 */
 		$this->fake_element = $element;
 		$this->element = $element;
 		if($parent) $this->_ = $parent;
+		
+		/**
+		 * Initialize a new Scope if one does not exist
+		 */
 		if(!is_object($this->_)) $this->_data = new Scope;
 	}
 	
 	public function _nchild($name) {
-		$class_name = str_replace(':','',"\lhtml\\tags\\tag_$name");
+		/**
+		 * If is a lhtml tag create it in the stack
+		 * @todo allow namespaced tags
+		 */
+		$class_name = str_replace(':','',__NAMESPACE__."\\tags\\tag_$name");
 		if(strpos($name, ':') === 0) $nchild = new $class_name($name, $this);
+		
+		/**
+		 * If is a normal element create it in the stack
+		 */
 		else $nchild = new Node($name, $this);
+		
+		/**
+		 * Set the new child element to this object and return the new child
+		 */
 		$this->children[] =& $nchild;
 		return $nchild;
 	}
@@ -39,7 +68,7 @@ class Node {
 		if(!is_string($cdata)) return false;
 		
 		/**
-		 * Save the string to the children variable then return true
+		 * Save the string to the children array then return true
 		 */
 		$this->children[] = $cdata;  return true;
 	}
@@ -85,25 +114,38 @@ class Node {
 		$output = "";
 		
 		/**
-		 * Render the code
+		 * If is a complete tag render it and return
 		 */
-		if(in_array($this->element, $this->complete_tags)) return "<$this->element".$this->_attributes_parse().' />';
+		if(in_array($this->element, self::$complete_tags)) return "<$this->element".$this->_attributes_parse().' />';
 		
-		if($this->element !== '')
-			$output .= "<$this->element".$this->_attributes_parse().'>';
+		/**
+		 * If is a real element create the opening tag
+		 */
+		if($this->element !== '') $output .= "<$this->element".$this->_attributes_parse().'>';
 		
+		/**
+		 * Loop thru the children and populate this tag
+		 */
 		if(!empty($this->children)) foreach($this->children as $child) {			
 			if($child instanceof Node) $output .= $child->output();
 			else if(is_string($child)) $output .= $this->_string_parse($child);
 		}
 		
-		if($this->element !== '')
-			$output .= "</$this->element>";
+		/**
+		 * Close the tag
+		 */
+		if($this->element !== '') $output .= "</$this->element>";
 		
+		/**
+		 * Return the rendered page
+		 */
 		return $output;
 	}
 	
 	public function _data() {
+		/**
+		 * Grab the next instance of Scope in line
+		 */
 		if(isset($this->_data)) return $this->_data;
 		else return $this->_->_data();
 	}
@@ -111,10 +153,16 @@ class Node {
 	public function _init_scope($new = false){
 		if(!$new) {
 			$var = false;
+			/**
+			 * If there is a load attribute load load the var as this var
+			 */
 			if(isset($this->attributes[':load']))
 				$var = $this->attributes[':load'];
 			if(!$var) return false;
-
+			
+			/**
+			 * Instantiate a new scope for the children of this element
+			 */
 			list($source, $as) = explode(' as ', $var);	
 			$vars = $this->extract_vars($source);
 			if($vars) {
@@ -125,12 +173,22 @@ class Node {
 			}
 		}
 
+		/**
+		 * Instantiate a new scope for the children of this element
+		 */
 		$this->_data = new Scope($this->_ ? $this->_->_data() : false);
 		if(isset($source) && isset($as)) $this->_data()->source($source, $as);
 	}
 	
+	/**
+	 * Parse the variables in a string
+	 *
+	 * @param string $value 
+	 * @return void
+	 * @author Kelly Lauren Summer Becker
+	 */
 	public function _string_parse($value) {
-		
+	
 			$vars = $this->extract_vars($value);
 			if($vars) {
 				foreach($vars as $var) {
@@ -143,6 +201,12 @@ class Node {
 			return $value;
 	}
 	
+	/**
+	 * Parse the variables in an attribute then return them properly formatted
+	 *
+	 * @return void
+	 * @author Kelly Lauren Summer Becker
+	 */
 	public function _attributes_parse() {
 		
 		$protocol = empty($_SERVER['HTTPS'])? 'http': 'https';
