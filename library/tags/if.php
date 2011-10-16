@@ -3,7 +3,7 @@
 namespace Evolution\LHTML;
 use Exception;
 
-class tag_if extends \lhtml\node {
+class tag_if extends Node {
 	
 	public function init() {
 		$this->element = false;
@@ -74,7 +74,7 @@ class tag_if extends \lhtml\node {
 }
 
 
-class tag_else extends \lhtml\node {
+class tag_else extends Node {
 	public $show_else = 0;
 	public function __construct($element = false, $parent = false) {
 		parent::__construct($element, $parent);

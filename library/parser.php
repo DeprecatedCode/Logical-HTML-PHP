@@ -120,7 +120,7 @@ class Parser {
 		
 		//If the LHTML file does not exist throw an exception
 		if(!is_file($file))
-			throw new \Exception("LHTML could not load `$file`");
+			throw new Exception("LHTML could not load `$file`");
 		
 		// Get file contents
 		$lhtml = file_get_contents($file);

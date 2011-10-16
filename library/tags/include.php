@@ -3,7 +3,7 @@
 namespace Evolution\LHTML;
 use Exception;
 
-class tag_include extends \lhtml\node {
+class tag_include extends Node {
 	
 	public function init() {
 		$this->element = false;
@@ -23,7 +23,7 @@ class tag_include extends \lhtml\node {
 			$v = str_replace('{'.$var.'}', $data_response, $v);				
 		}
 				
-		$parser = new \lhtml\Parser;
+		$parser = new Parser;
 		$this->children = $parser->build($v, true);
 	}
 	

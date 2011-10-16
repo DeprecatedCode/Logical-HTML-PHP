@@ -6,5 +6,5 @@ use Evolution\Kernel\Service;
 /**
  * Add the site service
  */
-Service::bind('Evolution\LHTML\Bundle::add_hook', 'lhtml:addhook');
-Service::bind('Evolution\Router\Controller::route', 'portal:route:controller');
+Service::bind('Evolution\LHTML\Bundle::sahook', 'lhtml:addhook');
+Service::bind('Evolution\LHTML\Bundle::sbuild', 'lhtml:parse');
