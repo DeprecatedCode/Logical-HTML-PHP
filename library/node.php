@@ -22,6 +22,12 @@ class Node {
 	public $children = array();
 	
 	/**
+	 * Iteration Variables
+	 */
+	public $loop_type;
+	public $is_loop;
+	
+	/**
 	 * Parent in the Node Stack
 	 */
 	public $_;
@@ -122,27 +128,68 @@ class Node {
 		$output = "";
 		
 		/**
-		 * If is a complete tag render it and return
+		 * If requires iteration
 		 */
-		if(in_array($this->element, self::$complete_tags)) return "<$this->element".$this->_attributes_parse().' />';
+		if($this->is_loop) {
+			$this->_data()->reset();
+			while($this->_data()->iterate()) {
 		
-		/**
-		 * If is a real element create the opening tag
-		 */
-		if($this->element !== '' && $this->element) $output .= "<$this->element".$this->_attributes_parse().'>';
-		
-		/**
-		 * Loop thru the children and populate this tag
-		 */
-		if(!empty($this->children)) foreach($this->children as $child) {			
-			if($child instanceof Node) $output .= $child->output();
-			else if(is_string($child)) $output .= $this->_string_parse($child);
+				/**
+				 * If is a complete tag render it and return
+				 */
+				if(in_array($this->element, self::$complete_tags)) return "<$this->element".$this->_attributes_parse().' />';
+
+				/**
+				 * If is a real element create the opening tag
+				 */
+				if($this->element !== '' && $this->element) $output .= "<$this->element".$this->_attributes_parse().'>';
+
+				/**
+				 * Loop thru the children and populate this tag
+				 */
+				if(!empty($this->children)) foreach($this->children as $child) {			
+					if($child instanceof Node) $output .= $child->output();
+					else if(is_string($child)) $output .= $this->_string_parse($child);
+				}
+
+				/**
+				 * Close the tag
+				 */
+				if($this->element !== '' && $this->element) $output .= "</$this->element>";
+				
+			}
+			
 		}
 		
 		/**
-		 * Close the tag
+		 * Else load normally
 		 */
-		if($this->element !== '' && $this->element) $output .= "</$this->element>";
+		else {
+			
+			/**
+			 * If is a complete tag render it and return
+			 */
+			if(in_array($this->element, self::$complete_tags)) return "<$this->element".$this->_attributes_parse().' />';
+
+			/**
+			 * If is a real element create the opening tag
+			 */
+			if($this->element !== '' && $this->element) $output .= "<$this->element".$this->_attributes_parse().'>';
+
+			/**
+			 * Loop thru the children and populate this tag
+			 */
+			if(!empty($this->children)) foreach($this->children as $child) {			
+				if($child instanceof Node) $output .= $child->output();
+				else if(is_string($child)) $output .= $this->_string_parse($child);
+			}
+
+			/**
+			 * Close the tag
+			 */
+			if($this->element !== '' && $this->element) $output .= "</$this->element>";
+			
+		}
 		
 		/**
 		 * Return the rendered page
@@ -179,6 +226,14 @@ class Node {
 					$source = str_replace('{'.$var.'}', $data_response, $source);
 				}
 			}
+		}
+		
+		/**
+		 * Load IXML Iterate
+		 */
+		if($this->attr[':load'] && $this->attr[':iterate']) {
+			$this->loop_type = $this->attr[':iterate'];
+			$this->is_loop = true;
 		}
 
 		/**
