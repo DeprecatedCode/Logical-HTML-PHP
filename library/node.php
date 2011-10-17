@@ -230,37 +230,7 @@ class Node {
 					$value = str_replace('{'.$var.'}', $data_response, $value);				
 				}				
 			}
-			
-			if(($attr == 'href' || $attr == 'action' || $attr == 'src') && (strpos($value, '://') > 0 && (strpos($value, 'http://') !== 0 || strpos($value, 'https://') !== 0))) {
-				if(strpos($value, '://') > 0) {
-					$access_key = substr($value, 0, strpos($value, '://'));
-				}
-				$dir = @e::$env['http_path'] ? e::$env['http_path'] : '/';
-				$portal = e::$url->portal;
-				switch($access_key) {
-					case 'static':
-						$value = MODE_DEVELOPMENT ? str_replace('static://','http://static.momentumapp.dev/', $value) : str_replace('static://',$static_protocol.'.momentumapp.co/', $value);
-						//$value =str_replace('static://','http://assets.momentumapp.co/', $value);
-					break;
-					case 'view' :
-						$value = str_replace($access_key.'://',e::$url->view_path, $value);
-					break;
-					case 'protocol' :
-						$value = str_replace($access_key.'://',$protocol.'://', $value);
-					break;
-					case 'http' :
-					case 'https' :
-						$value = $value;
-					break;
-					default :
-						$value = str_replace($access_key.'://',$dir.$portal.'/', $value);
-					break;
-				}
-				//$value = str_replace('^^/',$dir.$portal.'/', $value);
-				//$value = str_replace('^/',$dir, $value);
-			}
-			
-			if(substr($attr,0,1) == '_' || substr($attr,0,1) == ':' || substr($attr,0,5) == 'ixml:') continue;
+			if(substr($attr,0,1) == ':') continue;
 			if(strlen($value) > 0) $html .= " $attr=\"$value\"";
 		}
 		return $html;
