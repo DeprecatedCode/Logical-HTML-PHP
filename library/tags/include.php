@@ -9,22 +9,29 @@ class tag_include extends Node {
 		$this->element = false;
 	}
 	
-	public function output() {
+	public function build() {
 		$this->process();
-		return parent::output();
+		return parent::build();
 	}
 	
 	public function process() {
-		$v = $this->attributes['file'];		
+		$data = $this->_data();
+		$dir = realpath(dirname($data->__file__));
+		$v = $this->attributes['file'];	
 		
 		$vars = $this->extract_vars($v);
 		if($vars) foreach($vars as $var) {
-			$data_response = $this->_data()->$var;	
+			$data_response = $data->$var;	
 			$v = str_replace('{'.$var.'}', $data_response, $v);				
 		}
-				
-		$parser = new Parser;
-		$this->children = $parser->build($v, true);
+		
+		$v = "$dir/$v";
+		
+		if(pathinfo($v, PATHINFO_EXTENSION) !== 'lhtml')
+			$v .= '.lhtml';
+
+		// Set the children to an array with one element
+		$this->children = array(Parser::parseFile($v));
 	}
 	
 }

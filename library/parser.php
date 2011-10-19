@@ -7,7 +7,7 @@ use Exception;
 class Parser {
 	
 	// The entire syntax is defined here as what token the next char implies
-	private $grammar = array(
+	private static $grammar = array(
 		
 		# _
 		'default' 			=> array(	'<' => 'tag-start' 			),
@@ -116,16 +116,27 @@ class Parser {
 		),
 		
 	);
-
-	public function build($file, $retstack = false) {
-		
-		//If the LHTML file does not exist throw an exception
-		if(!is_file($file))
-			throw new Exception("LHTML could not load `$file`");
+	
+	public static function parseString($string) {
 		
 		// Load lexer
 		$lexer = new Lexer();
-		$lexer->grammar($this->grammar)->sourceFile($file);
+		$lexer->grammar(self::$grammar)->sourceString($string);
+		
+		// Parse lexer
+		return self::parseLexer($lexer);
+	}
+
+	public static function parseFile($file) {
+		// Load lexer
+		$lexer = new Lexer();
+		$lexer->grammar(self::$grammar)->sourceFile($file);
+		
+		// Parse lexer
+		return self::parseLexer($lexer);
+	}
+		
+	public static function parseLexer(&$lexer) {
 		
 		// Debug if set
 		if(isset($_GET['--tokens']))
@@ -140,10 +151,24 @@ class Parser {
 		
 		// Create the root stack
 		$stack = new Node('');
+		
+		// Add file to scope
+		$stack->_data->__file__ = $lexer->getFile();
+		
+		// Source code positions
+		$openLine = 0;
+		$openCol = 0;
+		
 		foreach($tokens as $token) {
 			
 			// Decide what to do based on token
 			switch($token->name) {
+				
+				// Start tag, just to record line and column
+				case 'tag-start':
+					$openLine = $token->line;
+					$openCol = $token->col;
+					break;
 				
 				// Open tag
 				case 'tag-open-name':
@@ -153,7 +178,10 @@ class Parser {
 					$openTags[$openTagsDepth] = $token->value;
 					
 					// Add element to the node stack
-					$stack = $stack->_nchild($token->value);
+					$stack = $stack->_nchild($token->value, (object) array(
+						'line' => $openLine,
+						'col' => $openCol
+					));
 					break;
 					
 				// Close tag
@@ -202,11 +230,10 @@ class Parser {
 		}
 		
 		if(isset($_GET['--stack'])) {
-			var_dump($stack);die;
+			/* Show debug of $stack */
+			eval(d);
 		}
 		
-		// Return stack output
-		if($retstack) return $stack;
-		else return $stack->output();
+		return $stack;
 	}
 }

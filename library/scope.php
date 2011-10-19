@@ -20,6 +20,11 @@ class Scope {
 	
 	public static $hooks = array();
 	
+	public static function addHook($name, &$obj) {
+		if(substr($name, 0, 1) !== ':') throw new Exception('You must prefix your LHTML hook with a colon! Error in hook $name');
+		self::$hooks[$name] =& $obj;
+	}
+	
 	public function get_data() {
 		$s = $this->source;
 		if($s) return $this->parent->$s;
@@ -30,7 +35,6 @@ class Scope {
 		$this->timers['scope->map'] = 0;
 		$this->timers['scope->get'] = 0;
 		
-		self::$hooks =& bundle::$hooks;
 		self::$hooks[':get'] =& $_GET;
 		self::$hooks[':post'] =& $_POST;
 	}
@@ -56,6 +60,7 @@ class Scope {
 		if(!$flag_first) {
 			if(is_string($map[0]) && strpos($map[0],"'") === 0) return trim($map[0],"'");
 			else if(is_string($map[0]) && is_numeric($map[0])) return $map[0];
+			else if(is_string($map[0]) && isset($this->data[$map[0]]) && !is_object($this->data[$map[0]])) return $this->data[$map[0]];
 			else if(is_string($map[0]) && !isset($this->data[$map[0]])) return $this->parent ? $this->parent->get($allmap) : false;
 			else throw new \Exception("IXML Scope no function was called");
 		}
@@ -228,6 +233,13 @@ class Scope {
 		# if requesting query, load the query results into this scope
 		$this->data[$this->source_as] = $this->get($source_map);
 		$this->iterator = $this->source_as;
+	}
+	
+	/**
+	 * Load a literal variable into the scope
+	 */
+	public function __set($var, $value) {
+		$this->data[$var] = $value;
 	}
 	
 	/**

@@ -6,32 +6,28 @@ use Evolution\Kernel\Service;
 use Evolution\Text\JSON;
 use Exception;
 
-//require_once "parser.php";
-//require_once "node.php";
-//require_once "scope.php";
-
 class Bundle {
 	
-	public static $hooks = array();
+	private $file;
+	private $stack;
 	
-	public function ahook($name,&$obj) {
-		if(substr($name, 0, 1) !== ':') throw new Exception('You must prefix your LHTML hook with a colon! Error in hook $name');
-		self::$hooks[$name] =& $obj;
+	public function file($file) {
+		$this->file = $file;
+		if($this->stack)
+			unset($this->stack);
+		return $this;
 	}
 	
-	public static function sahook($name,&$obj) {
-		if(substr($name, 0, 1) !== ':') throw new Exception('You must prefix your LHTML hook with a colon! Error in hook $name');
-		self::$hooks[$name] =& $obj;
+	public function parse() {
+		if(!isset($this->file))
+			throw new Exception("LHTML: No file specified to parse");
+		$this->stack = Parser::parseFile($this->file);
+		return $this;
 	}
 	
-	public function build($file, $retstack = false) {
-		$parser = new Parser;
-		return $parser->build($file, $retstack);
+	public function build() {
+		if(!isset($this->stack))
+			$this->parse();
+		return $this->stack->build();
 	}
-	
-	public static function sbuild($file, $retstack = false) {
-		$parser = new Parser;
-		return $parser->build($file, $retstack);
-	}
-	
 }

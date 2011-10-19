@@ -4,12 +4,10 @@ namespace Evolution\LHTML;
 use Exception;
 
 /**
- * Load LHTML Functions
+ * Load LHTML Tags
  */
-$d = dir(__DIR__.'/tags'); 
-while($filename = $d->read()) { 
-	if(substr($filename,0,1) !='.') include_once(__DIR__."/tags/$filename");
-} $d->close();
+foreach(glob(__DIR__.'/tags/*.php') as $file)
+	require_once($file);
 
 class Node {
 	
@@ -22,15 +20,14 @@ class Node {
 	public $children = array();
 	
 	/**
-	 * Iteration Variables
-	 */
-	public $loop_type;
-	public $is_loop;
-	
-	/**
 	 * Parent in the Node Stack
 	 */
 	public $_;
+	
+	/**
+	 * Source code information
+	 */
+	public $_code;
 	
 	/**
 	 * Tags that are complete
@@ -53,12 +50,31 @@ class Node {
 		/**
 		 * Run any initialization scripts for the custom tags
 		 */
-		$this->init();
+		try {
+			$this->init();
+		} catch(Exception $e) {
+			$this->_error($e);
+		}
 	}
 	
 	public function init() {}
 	
-	public function _nchild($name) {
+	public function _error($err = 'Error') {
+		if($err instanceof Exception)
+			$err = $err->getMessage();
+		$err = "$err in tag `<$this->fake_element>` on line `".$this->_code->line.
+			"` at column `".$this->_code->col."` in file `".$this->_data()->__file__."`";
+		$div = $this->_nchild('div');
+		$div->_attr('style', 'margin: 12px; color: #a00; border: 1px solid #a00; background: #fcc; font-size: 12px; padding: 12px;');
+		$div->_cdata("<b>LHTML Error ::</b> ".preg_replace('/`([^`]*)`/x', '<code>$1</code>', htmlspecialchars($err)));
+		return $div;
+	}
+	
+	/**
+	 * @attribute Tag name
+	 * @attribute Source code, should include line and col properties
+	 */
+	public function _nchild($name, $code = null) {
 		/**
 		 * If is a lhtml tag create it in the stack
 		 * @todo allow namespaced tags
@@ -71,6 +87,10 @@ class Node {
 		 */
 		else $nchild = new Node($name, $this);
 		
+		/**
+		 * Save the source
+		 */
+		$nchild->_code = $code;
 		/**
 		 * Set the new child element to this object and return the new child
 		 */
@@ -123,73 +143,38 @@ class Node {
 		$this->attributes = $attrs; return true;
 	}
 	
-	public function output() {
+	public function build() {
 		$this->_init_scope();
 		$output = "";
 		
 		/**
-		 * If requires iteration
+		 * If is a complete tag render it and return
 		 */
-		if($this->is_loop) {
-			$this->_data()->reset();
-			while($this->_data()->iterate()) {
+		if(in_array($this->element, self::$complete_tags)) return "<$this->element".$this->_attributes_parse().' />';
 		
-				/**
-				 * If is a complete tag render it and return
-				 */
-				if(in_array($this->element, self::$complete_tags)) return "<$this->element".$this->_attributes_parse().' />';
-
-				/**
-				 * If is a real element create the opening tag
-				 */
-				if($this->element !== '' && $this->element) $output .= "<$this->element".$this->_attributes_parse().'>';
-
-				/**
-				 * Loop thru the children and populate this tag
-				 */
-				if(!empty($this->children)) foreach($this->children as $child) {			
-					if($child instanceof Node) $output .= $child->output();
-					else if(is_string($child)) $output .= $this->_string_parse($child);
+		/**
+		 * If is a real element create the opening tag
+		 */
+		if($this->element !== '' && $this->element) $output .= "<$this->element".$this->_attributes_parse().'>';
+		
+		/**
+		 * Loop thru the children and populate this tag
+		 */
+		if(!empty($this->children)) foreach($this->children as $child) {
+			if($child instanceof Node) {
+				try {
+					$output .= $child->build();
+				} catch(Exception $e) {
+					$output .= $child->_error($e)->build();
 				}
-
-				/**
-				 * Close the tag
-				 */
-				if($this->element !== '' && $this->element) $output .= "</$this->element>";
-				
 			}
-			
+			else if(is_string($child)) $output .= $this->_string_parse($child);
 		}
 		
 		/**
-		 * Else load normally
+		 * Close the tag
 		 */
-		else {
-			
-			/**
-			 * If is a complete tag render it and return
-			 */
-			if(in_array($this->element, self::$complete_tags)) return "<$this->element".$this->_attributes_parse().' />';
-
-			/**
-			 * If is a real element create the opening tag
-			 */
-			if($this->element !== '' && $this->element) $output .= "<$this->element".$this->_attributes_parse().'>';
-
-			/**
-			 * Loop thru the children and populate this tag
-			 */
-			if(!empty($this->children)) foreach($this->children as $child) {			
-				if($child instanceof Node) $output .= $child->output();
-				else if(is_string($child)) $output .= $this->_string_parse($child);
-			}
-
-			/**
-			 * Close the tag
-			 */
-			if($this->element !== '' && $this->element) $output .= "</$this->element>";
-			
-		}
+		if($this->element !== '' && $this->element) $output .= "</$this->element>";
 		
 		/**
 		 * Return the rendered page
@@ -226,14 +211,6 @@ class Node {
 					$source = str_replace('{'.$var.'}', $data_response, $source);
 				}
 			}
-		}
-		
-		/**
-		 * Load IXML Iterate
-		 */
-		if($this->attr[':load'] && $this->attr[':iterate']) {
-			$this->loop_type = $this->attr[':iterate'];
-			$this->is_loop = true;
 		}
 
 		/**

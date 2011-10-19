@@ -16,20 +16,20 @@ class Router {
 		
 		// If dirs are not specified, use defaults
 		if(is_null($dirs))
-			$dirs = Configure::getArray('interface.location');
+			$dirs = Configure::getArray('lhtml.location');
 		
 		// Make sure path contains valid controller name
 		if(!isset($path[0]) || $path[0] == '')
 			return;
 		
-		// Get the interface name
+		// Get the lhtml name
 		$name = strtolower($path[0]);
 		
-		// Check all dirs for a matching interface
+		// Check all dirs for a matching lhtml
 		foreach($dirs as $dir) {
-			// Look in interfaces folder
-			if(basename($dir) !== 'interfaces')
-				$dir .= '/interfaces';
+			// Look in lhtml folder
+			if(basename($dir) !== 'lhtml')
+				$dir .= '/lhtml';
 			
 			// Skip if missing
 			if(!is_dir($dir))
@@ -42,11 +42,8 @@ class Router {
 			if(!is_file($file))
 				continue;
 	
-			// Parse the interface file
-			$result = Service::run('lhtml:parse', $file);
-			
-			// Output the interface
-			echo $result[0];
+			// Parse the lhtml file and build the stack
+			echo Parser::parse($file)->build();
 			            
             // Complete the current binding queue
             throw new Completion($result);

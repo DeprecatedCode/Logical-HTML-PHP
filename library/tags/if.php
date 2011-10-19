@@ -9,7 +9,7 @@ class tag_if extends Node {
 		$this->element = false;
 	}
 	
-	public function output() {		
+	public function build() {		
 		$this->_init_scope();
 		
 		/**
@@ -35,6 +35,9 @@ class tag_if extends Node {
 	}
 	
 	public function process() {
+		if(!isset($this->attributes['cond']))
+			throw new Exception('No if-condition `cond` specified');	
+		
 		$v = $this->attributes['cond'];
 		
 		$vars = $this->extract_vars($v);
@@ -85,7 +88,7 @@ class tag_else extends Node {
 		}
 	}
 	
-	public function output() {
+	public function build() {
 		$this->_init_scope();
 		
 		/**
