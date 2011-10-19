@@ -20,6 +20,12 @@ class Node {
 	public $children = array();
 	
 	/**
+	 * Iteration Variables
+	 */
+	public $loop_type;
+	public $is_loop;
+	
+	/**
 	 * Parent in the Node Stack
 	 */
 	public $_;
@@ -148,6 +154,21 @@ class Node {
 		$output = "";
 		
 		/**
+		 * If requires iteration
+		 * else just execute the loop once
+		 */
+		if($this->is_loop) {
+			$this->_data()->reset();
+		} else {
+			$once = 1;
+		}
+		
+		/**
+		 * Start build loop
+		 */
+		while($this->is_loop ? $this->_data()->iterate() : $once--) {
+		
+		/**
 		 * If is a complete tag render it and return
 		 */
 		if(in_array($this->element, self::$complete_tags)) return "<$this->element".$this->_attributes_parse().' />';
@@ -175,6 +196,11 @@ class Node {
 		 * Close the tag
 		 */
 		if($this->element !== '' && $this->element) $output .= "</$this->element>";
+		
+		/**
+		 * End build loop
+		 */
+		}
 		
 		/**
 		 * Return the rendered page
@@ -211,6 +237,14 @@ class Node {
 					$source = str_replace('{'.$var.'}', $data_response, $source);
 				}
 			}
+		}
+		
+		/**
+		 * Load IXML Iterate
+		 */
+		if($this->attr[':load'] && isset($this->attr[':iterate'])) {
+			$this->loop_type = $this->attr[':iterate'];
+			$this->is_loop = true;
 		}
 
 		/**
