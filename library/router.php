@@ -5,6 +5,7 @@ use Evolution\Kernel\Configure;
 use Evolution\Kernel\Service;
 use Evolution\Kernel\Completion;
 use Exception;
+use e;
 
 /**
  * Router Interfaces
@@ -43,7 +44,7 @@ class Router {
 				continue;
 	
 			// Parse the lhtml file and build the stack
-			echo Parser::parse($file)->build();
+			echo e::lhtml()->file($file)->parse()->build();
 			            
             // Complete the current binding queue
             throw new Completion($result);
