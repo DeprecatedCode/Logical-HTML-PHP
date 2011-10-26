@@ -1,0 +1,5 @@
+David:
+	Figure out why :load=":scope as whatever" :iterate="self" etc.... is not working...
+	
+Nate:
+	Double check your exceptions
