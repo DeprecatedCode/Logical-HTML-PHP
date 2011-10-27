@@ -11,7 +11,7 @@ class Bundle {
 	private $file;
 	private $stack;
 	
-	public function __construct() {
+	public function __construct($dir) {
 		/**
 		 * Add the site service
 		 */

@@ -81,7 +81,8 @@ class Parser {
 		'tag-end-outside'	=> array(	'*' => 'default'			),
 		
 		# <a ... >_ or <a>_							
-		'tag-end-inside'	=> array(	'*' => 'tag-contents'		),
+		'tag-end-inside'	=> array(	'*' => 'tag-contents',
+										'<' => 'tag-start'			),
 						
 		# <a>_						
 		'tag-contents' 		=> array(	'type' => 'conditional',
@@ -112,7 +113,7 @@ class Parser {
 					"'" => 'cdata-string-single'		),
 					
 			# <other...>_
-			array(	'<' => 'tag-start'					)
+			array(	'*' => '&default'					)
 		),
 		
 	);
