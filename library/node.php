@@ -1,6 +1,7 @@
 <?php
 
 namespace Evolution\LHTML;
+use Evolution\Kernel\Service;
 use Exception;
 
 /**
@@ -300,6 +301,7 @@ class Node {
 			$response = Service::run("attribute:$attr", $value);
 			if(count($response) > 0)
 				$value = array_pop($response);
+
 			//if($attr == 'href') eval(d);
 			if(strlen($value) > 0) $html .= " $attr=\"$value\"";
 		}

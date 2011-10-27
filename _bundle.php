@@ -11,6 +11,24 @@ class Bundle {
 	private $file;
 	private $stack;
 	
+	public function __construct() {
+		/**
+		 * Add the site service
+		 */
+		Service::bind('Evolution\LHTML\Router::route', 'router:route:lhtml', 'portal:route:lhtml');
+		
+		/**
+		 * Add lhtml to default router and portal routing
+		 */
+		Configure::add('portal.defaults.run_with', 'lhtml');
+		Configure::add('router.defaults.run_with', 'lhtml');
+		Service::bind(array($this, '__bind_hooks'), 'site:ready');
+	}
+	
+	public function __bind_hooks() {
+		Service::run('lhtml:bind:hooks');
+	}
+	
 	public function file($file) {
 		$this->file = $file;
 		if($this->stack)
