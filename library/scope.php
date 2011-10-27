@@ -61,6 +61,8 @@ class Scope {
 			if(is_string($map[0]) && strpos($map[0],"'") === 0) return trim($map[0],"'");
 			else if(is_string($map[0]) && is_numeric($map[0])) return $map[0];
 			else if(is_string($map[0]) && isset($this->data[$map[0]]) && !is_object($this->data[$map[0]])) return $this->data[$map[0]];
+			else if(is_string($map[0]) && isset($this->data[$map[0]]) && is_object($this->data[$map[0]])) { $source = $this->data[$map[0]]; $flag_first = 1;}
+			else if(is_string($map[0]) && isset($this->data[$map[0]]) && is_array($this->data[$map[0]])) { $source = $this->data[$map[0]]; $flag_first = 1;}
 			else if(is_string($map[0]) && !isset($this->data[$map[0]])) return $this->parent ? $this->parent->get($allmap) : false;
 			else throw new \Exception("IXML Scope no function was called");
 		}

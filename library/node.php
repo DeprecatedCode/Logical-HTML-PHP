@@ -297,6 +297,10 @@ class Node {
 				}				
 			}
 			if(substr($attr,0,1) == ':') continue;
+			$response = Service::run("attribute:$attr", $value);
+			if(count($response) > 0)
+				$value = array_pop($response);
+			//if($attr == 'href') eval(d);
 			if(strlen($value) > 0) $html .= " $attr=\"$value\"";
 		}
 		return $html;
